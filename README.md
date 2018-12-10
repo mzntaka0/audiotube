@@ -1,2 +1,2 @@
 # audiotube
-Easily can get audio and subtitle from YouTube
+Easily can get audio and 'standard' subtitle from YouTube
