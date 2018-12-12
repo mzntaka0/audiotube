@@ -1,120 +1,116 @@
 # -*- coding: utf-8 -*-
 """
 """
-import argparse
-import codecs
-import datetime
-import glob
 import json
-import math
-import os
-import requests
-import sys
-import time
-import urllib.request
+from logging import getLogger, StreamHandler, Formatter, INFO
 import xml.etree.ElementTree as ET
 from urllib import request as urllib
-from urllib.error import HTTPError
 
 from apiclient.discovery import build
-from apiclient.errors import HttpError
-from oauth2client.tools import argparser
-import librosa
+from tqdm import tqdm
+
+logger = getLogger(__name__)
+logger.setLevel(INFO)
+handler = StreamHandler()
+handler_format = Formatter('[%(asctime)s] - %(message)s')
+handler.setFormatter(handler_format)
+handler.setLevel(INFO)
+logger.setLevel(INFO)
+logger.addHandler(handler)
+
 
 class Search(object):
+    """
+    Search class for YouTube
+
+    Args:
+        * developer_key (string): developer key to access Google YouTube API(v3)
+        * caption_mode (string): select mode for caption type. ['standard', 'ASR', 'both']
+                - standard -> handmade caption
+                - ASR -> captioned by ASR(Auto Speech Recognition)
+                - both -> get both standard and ASR
+
+    Usage:
+    >>> search = audiotube.Search(developer_key)
+    >>> result = search.run('keyword for search e.g. political speech')
+    """
     YOUTUBE_API_SERVICE_NAME = "youtube"
     YOUTUBE_API_VERSION = "v3"
+    caption_mode = ['standard', 'ASR', 'both']  # need 'both'?
 
-    def __init__(self, developer_key):
+    def __init__(self, developer_key, caption_mode='standard'):
         self.youtube = self._load_youtube_object(developer_key)
+        self.caption_mode = caption_mode
+        self.DEVELOPER_KEY = developer_key  # XXX: It's not so secure.
 
-    def get_all(self, keyword):
+    def run(self, keyword):
+        results_dict = self.fetch_result_ids(keyword)
+        desired_ids = self.select_desired_captions(results_dict['video'])
+        logger.info('Done to select. [Num] caption_id: {}, caption_id/video_id ratio: {:.1f} %'
+                .format(len(desired_ids), len(desired_ids) * 100 / float(len(results_dict['video'])))
+                )
+        return desired_ids
+
+    def fetch_result_ids(self, keyword):
         nextPageToken = None 
         maxResults = 50  # 50 is maximum num restrected by api
-        result_dict = {
-                'videos': [],
-                'channels': [],
+        results_dict = {
+                'video': [],
+                'channel': [],
                 'playlist': []
                 }
+        logger.info('Start downloading keyword matched videos..')
         while True:
             try:
-                response = self.youtube.search().list(
-                    q=keyword,
-                    part="id,snippet",
-                    pageToken=nextPageToken,
-                    maxResults=maxResults
-                ).execute()
-                if not response['items']:
+                response = self.from_keyword(keyword, nextPageToken, maxResults)
+
+                if not response['items']:  # TODO: is there the status that never match this condition? have to check.
                     break
                 nextPageToken = response['nextPageToken']
                 for result in response.get("items", []):
                     result_key = result["id"]["kind"].split('#')[1]  # expect ['video', 'channel', 'playlist']
-                    result_dict[result_key].append(result['id']['{}Id'.format(result_key)])
-                    #if result["id"]["kind"] == "youtube#video":
-                    #    videos.append([result["snippet"]["title"], result["id"]["videoId"]])
-                    #elif result["id"]["kind"] == "youtube#channel":
-                    #    channels.append([result["snippet"]["title"], result["id"]["channelId"]])
-                    #elif result["id"]["kind"] == "youtube#playlist":
-                    #    playlists.append([result["snippet"]["title"], result["id"]["playlistId"]])
-            except KeyError:
-                print('Additional request.')
+                    results_dict[result_key].append(result['id']['{}Id'.format(result_key)])
+            except KeyError:  # to request over 500. this is a kind of tricky.
+                logger.info('Additional request.')
                 continue
-        return result_dict
-
-    # TODO: parse response dict for easily using.
-    def from_keyword(self, keyword, pagetoken=None, max_results=50):
-        response = self._search(keyword, pagetoken, max_results=maxResults)
-        return response
-    
-    def _valid_key(self):
-        pass
-
-    def _load_youtube_object(self, developer_key):
-        youtube = build(self.YOUTUBE_API_SERVICE_NAME, self.YOUTUBE_API_VERSION,
-            developerKey=developer_key)
-        return youtube
-
-    def _parse_response(self, response):
-        videos = []
-        channels = []
-        playlists = []
-
-        # Add each result to the appropriate list, and then display the lists of
-        # matching videos, channels, and playlists.
-        for result in response.get("items", []):
-            if result["id"]["kind"] == "youtube#video":
-                videos.append("%s (%s)" % (result["snippet"]["title"],
-                                            result["id"]["videoId"]))
-            elif result["id"]["kind"] == "youtube#channel":
-                channels.append("%s (%s)" % (result["snippet"]["title"],
-                                            result["id"]["channelId"]))
-            elif result["id"]["kind"] == "youtube#playlist":
-                playlists.append("%s (%s)" % (result["snippet"]["title"],
-                                                result["id"]["playlistId"]))
-
-
+        logger.info('Done downloading.. [Num] video_id: {}, channel_id: {}, playlist_id: {}'
+                .format(*[len(results_dict[key]) for key in ['video', 'channel', 'playlist']]))
+        return results_dict
 
     def _search(self, keyword, pagetoken, max_results=50):
-        search_response = youtube.search().list(
+        response = self.youtube.search().list(
             q=keyword,
             part="id,snippet",
             pageToken=pagetoken,
             maxResults=max_results
         ).execute()
-        return search_response
+        return response
 
-    def _get_next_page_token(self):
-        pass
+    def select_desired_captions(self, video_ids):
+        accepted_video_ids = list()
+        logger.info('Start selecting video_id which made by {}. It may take time..'.format(self.caption_mode))
+        for video_id in tqdm(video_ids):
+            request = urllib.urlopen(
+                "https://www.googleapis.com/youtube/v3/captions?part=snippet&videoId=" + video_id + "&key=" + self.DEVELOPER_KEY)
+            response = request.read()
+            data = json.loads(response)
+            for item in data["items"]:
+                lang = item["snippet"]["language"]
+                trackKind = item["snippet"]["trackKind"]  # "standard" -> manual, "ASR" -> auto
+                if lang == "ja" and trackKind == "standard":  # FIXME: need to change to caption_mode
+                    caption_id = item["id"]
+                    accepted_video_ids.append(video_id)
+        return accepted_video_ids
 
-    def _get_title(self):
-        pass
-
-    def _get_video_id(self):
-        pass
 
 
-
-
-if __name__ == '__main__':
-    pass
+    # TODO: parse response dict for easily using.
+    def from_keyword(self, keyword, pagetoken=None, max_results=50):
+        response = self._search(keyword, pagetoken, max_results=max_results)
+        return response
+    
+    def _load_youtube_object(self, developer_key):
+        youtube = build(self.YOUTUBE_API_SERVICE_NAME, self.YOUTUBE_API_VERSION,
+            developerKey=developer_key)
+        return youtube
 
