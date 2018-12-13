@@ -12,7 +12,7 @@ import audiotube
 class TestSearch(unittest.TestCase):
 
     def test_fetch_result_ids(self):
-        developer_key = 'dummy_apikey'
+        developer_key = os.getenv('DEVELOPER_KEY')
         search = audiotube.Search(developer_key)
 
 
