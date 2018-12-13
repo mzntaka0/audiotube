@@ -48,6 +48,7 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
+            python setup.py install
             python test/test_search.py
 
       - store_artifacts:
