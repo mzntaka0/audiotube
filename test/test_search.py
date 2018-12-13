@@ -12,7 +12,8 @@ import audiotube
 class TestSearch(unittest.TestCase):
 
     def test_fetch_result_ids(self):
-        search = audiotube.Search()
+        developer_key = 'dummy_apikey'
+        search = audiotube.Search(developer_key)
 
 
 if __name__ == '__main__':
