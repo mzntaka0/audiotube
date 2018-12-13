@@ -7,6 +7,8 @@ import sys
 import unittest
 
 import audiotube
+from dotenv import load_dotenv
+load_dotenv()
 
 
 class TestSearch(unittest.TestCase):
