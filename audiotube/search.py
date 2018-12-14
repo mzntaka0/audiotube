@@ -102,8 +102,6 @@ class Search(object):
                     accepted_video_ids.append(video_id)
         return accepted_video_ids
 
-
-
     # TODO: parse response dict for easily using.
     def from_keyword(self, keyword, pagetoken=None, max_results=50):
         response = self._search(keyword, pagetoken, max_results=max_results)
