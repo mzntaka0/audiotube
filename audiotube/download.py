@@ -5,8 +5,6 @@ from __future__ import unicode_literals
 import argparse
 from pathlib import Path
 import os
-import sys
-import json
 import youtube_dl
 
 
@@ -15,6 +13,8 @@ class Download(object):
     def __init__(self, output_dir='result'):
         if os.path.exists(output_dir):
             raise OSError(17)
+    config['outtmpl'] = os.path.join(output_dir, '%(id)s.%(ext)s')
+    youtube_link = base_url + video_id
 
     def run(self, video_ids: List[str], output_dir: Path = 'result'):
         pass
