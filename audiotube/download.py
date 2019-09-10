@@ -2,22 +2,22 @@
 """
 """
 from __future__ import unicode_literals
-import argparse
+import glob
 from pathlib import Path
 import os
 import youtube_dl
+import urllib
 
 
+# FIXME: ganna be duplicated.
 class Download(object):
 
-    def __init__(self, output_dir='result'):
+    def __init__(self):
+        pass
+
+    def run(self, video_ids: list, output_dir: Path = 'result'):
         if os.path.exists(output_dir):
             raise OSError(17)
-    config['outtmpl'] = os.path.join(output_dir, '%(id)s.%(ext)s')
-    youtube_link = base_url + video_id
-
-    def run(self, video_ids: List[str], output_dir: Path = 'result'):
-        pass
 
     def download(self, video_id: str, output_dir: Path):
         base_url = 'https://www.youtube.com/watch?v='
@@ -38,14 +38,12 @@ class Download(object):
             ydl.download([youtube_link])
 
     def directory_init(self, output_dir: Path):
-
-        pass
-
+        output_dir.mkdir(parents=True, exist_ok=True)
 
     #保存したmp3から字幕を取得
-    def mp3totext(content_id: str):
+    def mp3totext(self, content_id: str):
         #英語の場合はhl=en
-        url = 'http://video.google.com/timedtext?hl=ja&lang=ja&name=&v='+content_id
+        url = 'http://video.google.com/timedtext?hl=en&lang=en&name=&v=' + content_id
         with urllib.request.urlopen(url) as response:
             XmlData = response.read()
         print(XmlData)
@@ -60,7 +58,7 @@ class Download(object):
         return start, dur, txt
 
     #字幕をテキストに出力
-    def write_data(start, dur, txt, filename):
+    def write_data(self, start, dur, txt, filename):
         print(filename)
         y, sr = librosa.load(filename, sr=44100)
         #basename = os.path.splitext(filename)[0]
@@ -77,18 +75,18 @@ class Download(object):
             #TODO: ファイル名の長さが固定前提になってるのを可変にする
             librosa.output.write_wav('bigger_data/audio/' + basename + '_' + str(i) + '.wav', snd, sr=44100)
 
-    def main(root):
+    def main(self, root):
         filenames = glob.glob(os.path.join(root, '*.wav'))
         print(filenames)
 
         for filename in filenames:
             #content_id = filename[-15:-4]
             content_id = os.path.splitext(os.path.split(filename)[1])[0]
-            try:
-                start, dur, txt = mp3totext(content_id)
-            except:
-                continue
-            try:
-                write_data(start, dur, txt, filename)
-            except:
-                continue
+            print(content_id)
+            start, dur, txt = self.mp3totext(content_id)
+            self.write_data(start, dur, txt, filename)
+
+
+if __name__ == '__main__':
+    download = Download()
+    download.main('.')

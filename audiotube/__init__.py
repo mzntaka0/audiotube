@@ -1,3 +1,5 @@
-from audiotube.search import Search
-from audiotube.download import download
+from audiotube.youtube import YouTube
 
+__all__ = [
+    'YouTube'
+]
