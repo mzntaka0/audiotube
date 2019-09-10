@@ -49,7 +49,7 @@ jobs:
           command: |
             . venv/bin/activate
             python setup.py install
-            python test/test_search.py
+            python test/test_youtube.py
 
       - store_artifacts:
           path: test-reports
