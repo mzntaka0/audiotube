@@ -43,7 +43,7 @@ class YouTube:
 
     @staticmethod
     def result_perser(urls):
-        filter_terms = ['googlead', 'start_radio', 'channel']
+        filter_terms = ['googlead', 'start_radio', 'channel', 'user']
         for term in filter_terms:
             urls = filter(YouTube.url_filter(term), urls)
         return list(urls)
