@@ -61,10 +61,10 @@ class YouTube:
 if __name__ == '__main__':
     from audiotube import YouTubeAudio
     youtube = YouTube()
-    results = youtube.search('python')
+    results = youtube.search('palo alto', search_num=10)
     print(results)
-    print(results[3])
-    assert isinstance(results, list)
+    assert isinstance(results, YouTubeAudios)
     assert isinstance(results[0], YouTubeAudio)
     #for result in results:
     #    print(result.transcription)
+    print(results[1].transcription)

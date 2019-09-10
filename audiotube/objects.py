@@ -7,6 +7,7 @@ import os
 import tempfile
 
 import youtube_dl
+import youtube_transcript_api
 from youtube_transcript_api import YouTubeTranscriptApi
 
 
@@ -34,7 +35,10 @@ class YouTubeAudio:
         return _id
 
     def fetch_transcription(self):
-        transcripted = YouTubeTranscriptApi.get_transcript(self.id)
+        try:
+            transcripted = YouTubeTranscriptApi.get_transcript(self.id)
+        except youtube_transcript_api._api.YouTubeTranscriptApi.CouldNotRetrieveTranscript:
+            return None
         return transcripted
 
     @property
@@ -44,9 +48,8 @@ class YouTubeAudio:
     @property
     def transcription(self):
         if not self._transcription:
-            transcripted = self.fetch_transcription()
-        self._transcription = transcripted
-        return transcripted
+            self._transcription = self.fetch_transcription()
+        return self._transcription
 
     @property
     def id(self):
