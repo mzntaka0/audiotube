@@ -13,6 +13,7 @@ class TestYouTube(unittest.TestCase):
     def test_fetch_result_ids(self):
         youtube = audiotube.YouTube()
         results = youtube.search('python')
+        print(results)
         assert isinstance(results, audiotube.objects.YouTubeAudios)
         assert isinstance(results[0], audiotube.objects.YouTubeAudio)
 
