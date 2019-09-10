@@ -15,7 +15,6 @@ python setup.py install
 ```
 
 #### using pip
-coming soon
 ```
 pip install audiotube
 ```
