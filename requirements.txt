@@ -4,3 +4,5 @@ oauth2client
 apiclient
 youtube_dl
 python-dotenv
+beautifulsoup4
+youtube_transcript_api
