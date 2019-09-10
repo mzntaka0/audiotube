@@ -111,9 +111,3 @@ class Search(object):
     def _load_youtube_object(self, developer_key):
         youtube = build(self.YOUTUBE_API_SERVICE_NAME, self.YOUTUBE_API_VERSION, developerKey=developer_key)
         return youtube
-
-
-if __name__ == '__main__':
-    devkey = 'AIzaSyCmYPi1rwlPB-imJbRr3b7iGCod1Xx22Ic'
-    search = Search(devkey, caption_mode='ASR')
-    search.select_desired_captions(['nbJ-2G2GXL0'])
